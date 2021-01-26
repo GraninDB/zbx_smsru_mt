@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.0</version>
+    <date>2021-01-26T17:26:39Z</date>
+    <media_types>
+        <media_type>
+            <name>SMS.RU</name>
+            <type>WEBHOOK</type>
+            <parameters>
+                <parameter>
+                    <name>API_ID</name>
+                    <value>API_ID_VALUE</value>
+                </parameter>
+                <parameter>
+                    <name>Message</name>
+                    <value>{ALERT.MESSAGE}</value>
+                </parameter>
+                <parameter>
+                    <name>To</name>
+                    <value>{ALERT.SENDTO}</value>
+                </parameter>
+            </parameters>
+            <script>var sms_ru = {&#13;
+    api_id: null,&#13;
+    to: null,&#13;
+    message: null,&#13;
+&#13;
+    sendMessage: function() {&#13;
+        var params = {&#13;
+            api_id: sms_ru.api_id,&#13;
+            to: sms_ru.to,&#13;
+            msg: sms_ru.message,&#13;
+            json: 1&#13;
+        },&#13;
+        data,&#13;
+        response,&#13;
+        request = new CurlHttpRequest(),&#13;
+        url = 'https://sms.ru/sms/send?api_id=' + sms_ru.api_id + '&amp;json=1&amp;to=' + sms_ru.to + '&amp;msg=' + sms_ru.message;&#13;
+&#13;
+        request.AddHeader('Content-Type:application/json');&#13;
+        data = JSON.stringify();&#13;
+&#13;
+        url = url.replace(/[\r\n]+/gm, &quot; &quot;);&#13;
+        url = url.replace(/ /g, &quot;%20&quot;);&#13;
+        Zabbix.Log(2, '[SMS.RU Webhook] URL: ' + url);&#13;
+	response = request.Get(url);&#13;
+        Zabbix.Log(2, '[SMS.RU Webhook] HTTP status: ' + request.Status());&#13;
+&#13;
+        try {&#13;
+            response = JSON.parse(response);&#13;
+        }&#13;
+        catch (error) {&#13;
+            response = null;&#13;
+        }&#13;
+        Zabbix.Log(4, '[SMS.RU Webhook] Response: ' + JSON.stringify(response));&#13;
+        if (request.Status() !== 200 || typeof response.status_code !== 'number' || response.status_code !== 100) {&#13;
+            Zabbix.Log(4, '[SMS.RU Webhook] Code: ' + response.status_code);&#13;
+            if (typeof response.status === 'string') {&#13;
+                throw response.status;&#13;
+            }&#13;
+            else {&#13;
+                throw 'Unknown error. Check debug log for more information.'&#13;
+            }&#13;
+        }&#13;
+    }&#13;
+}&#13;
+&#13;
+try {&#13;
+    var params = JSON.parse(value);&#13;
+&#13;
+    sms_ru.api_id = params.API_ID;&#13;
+    sms_ru.to = params.To;&#13;
+    sms_ru.message = params.Message;&#13;
+    sms_ru.sendMessage();&#13;
+&#13;
+    return 'OK';&#13;
+}&#13;
+catch (error) {&#13;
+    Zabbix.Log(4, '[SMS.RU Webhook] notification failed: ' + error);&#13;
+    throw 'Sending failed: ' + error + '.';&#13;
+}</script>
+            <timeout>10s</timeout>
+            <message_templates>
+                <message_template>
+                    <event_source>TRIGGERS</event_source>
+                    <operation_mode>PROBLEM</operation_mode>
+                    <subject>Problem: {EVENT.NAME}</subject>
+                    <message>Problem started at {EVENT.TIME} on {EVENT.DATE}&#13;
+Problem name: {EVENT.NAME}&#13;
+Host: {HOST.NAME}&#13;
+Severity: {EVENT.SEVERITY}&#13;
+Operational data: {EVENT.OPDATA}&#13;
+Original problem ID: {EVENT.ID}&#13;
+{TRIGGER.URL}</message>
+                </message_template>
+                <message_template>
+                    <event_source>TRIGGERS</event_source>
+                    <operation_mode>RECOVERY</operation_mode>
+                    <subject>Resolved in {EVENT.DURATION}: {EVENT.NAME}</subject>
+                    <message>Problem has been resolved in {EVENT.DURATION} at {EVENT.RECOVERY.TIME} on {EVENT.RECOVERY.DATE}&#13;
+Problem name: {EVENT.NAME}&#13;
+Host: {HOST.NAME}&#13;
+Severity: {EVENT.SEVERITY}&#13;
+Original problem ID: {EVENT.ID}&#13;
+{TRIGGER.URL}</message>
+                </message_template>
+                <message_template>
+                    <event_source>TRIGGERS</event_source>
+                    <operation_mode>UPDATE</operation_mode>
+                    <subject>Updated problem: {EVENT.NAME}</subject>
+                    <message>{USER.FULLNAME} {EVENT.UPDATE.ACTION} problem at {EVENT.UPDATE.DATE} {EVENT.UPDATE.TIME}.&#13;
+{EVENT.UPDATE.MESSAGE}&#13;
+&#13;
+Current problem status is {EVENT.STATUS}, acknowledged: {EVENT.ACK.STATUS}.</message>
+                </message_template>
+                <message_template>
+                    <event_source>DISCOVERY</event_source>
+                    <operation_mode>PROBLEM</operation_mode>
+                    <subject>Discovery: {DISCOVERY.DEVICE.STATUS} {DISCOVERY.DEVICE.IPADDRESS}</subject>
+                    <message>Discovery rule: {DISCOVERY.RULE.NAME}&#13;
+&#13;
+Device IP: {DISCOVERY.DEVICE.IPADDRESS}&#13;
+Device DNS: {DISCOVERY.DEVICE.DNS}&#13;
+Device status: {DISCOVERY.DEVICE.STATUS}&#13;
+Device uptime: {DISCOVERY.DEVICE.UPTIME}&#13;
+&#13;
+Device service name: {DISCOVERY.SERVICE.NAME}&#13;
+Device service port: {DISCOVERY.SERVICE.PORT}&#13;
+Device service status: {DISCOVERY.SERVICE.STATUS}&#13;
+Device service uptime: {DISCOVERY.SERVICE.UPTIME}</message>
+                </message_template>
+                <message_template>
+                    <event_source>AUTOREGISTRATION</event_source>
+                    <operation_mode>PROBLEM</operation_mode>
+                    <subject>Autoregistration: {HOST.HOST}</subject>
+                    <message>Host name: {HOST.HOST}&#13;
+Host IP: {HOST.IP}&#13;
+Agent port: {HOST.PORT}</message>
+                </message_template>
+            </message_templates>
+        </media_type>
+    </media_types>
+</zabbix_export>
